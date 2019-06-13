@@ -4,52 +4,68 @@ import (
     "database/sql"
     _ "github.com/mattn/go-sqlite3"
     "path/filepath"
-    "time"
 )
 
 type storage struct {
     database *sql.DB
 }
 
-func newStorage(dataDir string) *storage {
-    dbPath := filepath.Join(dataDir, "fee_rate_kit.db")
+func newStorage(dataDir string) (*storage, error) {
+    dbPath := filepath.Join(dataDir, databaseName+".db")
 
-    database, _ := sql.Open("sqlite3", dbPath)
+    database, err := sql.Open("sqlite3", dbPath)
 
-    statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS fee_rates (coin TEXT PRIMARY KEY ON CONFLICT REPLACE, low INTEGER, medium INTEGER, high INTEGER, timestamp INTEGER)")
-    _, _ = statement.Exec()
+    if err != nil {
+        return nil, err
+    }
 
-    return &storage{
+    storage := storage{
         database: database,
     }
+
+    err = storage.prepare()
+
+    if err != nil {
+        return nil, err
+    }
+
+    return &storage, nil
 }
 
-func (storage storage) save(rate FeeRate) {
-    statement, _ := storage.database.Prepare("INSERT INTO fee_rates (coin, low, medium, high, timestamp) VALUES (?, ?, ?, ?, ?)")
-    _, _ = statement.Exec(rate.coin, rate.lowPriority, rate.mediumPriority, rate.highPriority, rate.timestamp)
+func (storage *storage) prepare() error {
+    _, err := storage.database.Exec("CREATE TABLE IF NOT EXISTS fee_rates (coin TEXT PRIMARY KEY ON CONFLICT REPLACE, low INTEGER, medium INTEGER, high INTEGER, timestamp INTEGER)")
+
+    return err
 }
 
-func (storage storage) feeRate(coin coin) *FeeRate {
-    rows, _ := storage.database.Query("SELECT low, medium, high, timestamp FROM fee_rates WHERE coin = ?", coin)
+func (storage *storage) saveRates(rates []FeeRate) error {
+    for _, rate := range rates {
+        err := storage.saveRate(rate)
 
-    var low int64
-    var medium int64
-    var high int64
-    var timestamp int64
-
-    for rows.Next() {
-        _ = rows.Scan(&low, &medium, &high, &timestamp)
-
-        //fmt.Printf("DB: low: %v; medium: %v; high: %v; timestamp: %v\n", low, medium, high, timestamp)
-
-        return &FeeRate{
-            coin:           coin,
-            lowPriority:    low,
-            mediumPriority: medium,
-            highPriority:   high,
-            timestamp:      time.Now().Unix(),
+        if err != nil {
+            return err
         }
     }
 
     return nil
+}
+
+func (storage *storage) saveRate(rate FeeRate) error {
+    _, err := storage.database.Exec("INSERT INTO fee_rates (coin, low, medium, high, timestamp) VALUES (?, ?, ?, ?, ?)",
+        rate.coin, rate.lowPriority, rate.mediumPriority, rate.highPriority, rate.timestamp)
+    return err
+}
+
+func (storage *storage) feeRate(coin string) *FeeRate {
+    row := storage.database.QueryRow("SELECT low, medium, high, timestamp FROM fee_rates WHERE coin = ?", coin)
+
+    rate := FeeRate{coin: coin}
+
+    err := row.Scan(&rate.lowPriority, &rate.mediumPriority, &rate.highPriority, &rate.timestamp)
+
+    if err != nil {
+        return nil
+    }
+
+    return &rate
 }

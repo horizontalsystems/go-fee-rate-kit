@@ -3,22 +3,38 @@ package main
 import (
     "fmt"
     "github.com/horizontalsystems/go-fee-rate-kit"
+    "log"
 )
 
 func main() {
-    feeRateKit := feeratekit.NewFeeRateKit(".")
+    feeRateKit, err := feeratekit.NewFeeRateKit(".")
 
-    //feeRateKit.Refresh()
+    if err != nil {
+        log.Fatalln(err)
+    }
 
-    rate := feeRateKit.Bitcoin()
-    fmt.Printf("Bitcoin: low: %v, medium: %v, high: %v\n", rate.Low(), rate.Medium(), rate.High())
+    logRate(feeRateKit.Bitcoin(), "Bitcoin")
+    logRate(feeRateKit.BitcoinCash(), "Bitcoin Cash")
+    logRate(feeRateKit.Dash(), "Dash")
+    logRate(feeRateKit.Ethereum(), "Ethereum")
 
-    rate = feeRateKit.BitcoinCash()
-    fmt.Printf("Bitcoin Cash: low: %v, medium: %v, high: %v\n", rate.Low(), rate.Medium(), rate.High())
+    feeRateKit.Subscribe(HandlerStub(func() {
+        log.Println("On refresh First")
+    }))
 
-    rate = feeRateKit.Dash()
-    fmt.Printf("Dash: low: %v, medium: %v, high: %v\n", rate.Low(), rate.Medium(), rate.High())
+    feeRateKit.Subscribe(HandlerStub(func() {
+        log.Println("On refresh Second")
+    }))
 
-    rate = feeRateKit.Ethereum()
-    fmt.Printf("Ethereum: low: %v, medium: %v, high: %v\n", rate.Low(), rate.Medium(), rate.High())
+    _, _ = fmt.Scanln()
+}
+
+func logRate(rate *feeratekit.FeeRate, name string) {
+    log.Printf("%v: low: %v, medium: %v, high: %v\n", name, rate.Low(), rate.Medium(), rate.High())
+}
+
+type HandlerStub func()
+
+func (stub HandlerStub) OnRefresh() {
+    stub()
 }

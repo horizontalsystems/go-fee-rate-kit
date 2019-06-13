@@ -1,15 +1,13 @@
 package feeratekit
 
-type coin string
-
 const (
-    bitcoin     coin = "BTC"
-    bitcoinCash coin = "BCH"
-    dash        coin = "DASH"
-    ethereum    coin = "ETH"
+    bitcoin     = "BTC"
+    bitcoinCash = "BCH"
+    dash        = "DASH"
+    ethereum    = "ETH"
 )
 
-func (coin coin) defaultFeeRate() *FeeRate {
+func defaultFeeRate(coin string) *FeeRate {
     switch coin {
     case bitcoin:
         return &FeeRate{coin, 20, 40, 80, 1543211299}
@@ -24,7 +22,7 @@ func (coin coin) defaultFeeRate() *FeeRate {
     return nil
 }
 
-func (coin coin) maxFee() int64 {
+func maxFee(coin string) int64 {
     switch coin {
     case bitcoin:
         return 5000
@@ -39,7 +37,7 @@ func (coin coin) maxFee() int64 {
     return 0
 }
 
-func (coin coin) minFee() int64 {
+func minFee(coin string) int64 {
     switch coin {
     case bitcoin:
         return 1

@@ -4,7 +4,7 @@ import (
     "time"
 )
 
-type FeeRateKit struct {
+type Kit struct {
     storage         *storage
     syncer          *syncer
     refreshChannels []chan interface{}
@@ -14,14 +14,14 @@ type Handler interface {
     OnRefresh()
 }
 
-func NewFeeRateKit(dataDir string, infuraProjectId string, infuraProjectSecret string) (*FeeRateKit, error) {
+func NewKit(dataDir string, infuraProjectId string, infuraProjectSecret string) (*Kit, error) {
     storage, err := newStorage(dataDir)
 
     if err != nil {
         return nil, err
     }
 
-    kit := FeeRateKit{
+    kit := Kit{
         storage:         storage,
         syncer:          newSyncer(storage, infuraProjectId, infuraProjectSecret),
         refreshChannels: make([]chan interface{}, 0),
@@ -42,7 +42,7 @@ func NewFeeRateKit(dataDir string, infuraProjectId string, infuraProjectSecret s
     return &kit, nil
 }
 
-func (kit *FeeRateKit) feeRate(coin string) *FeeRate {
+func (kit *Kit) feeRate(coin string) *FeeRate {
     storedFeeRate := kit.storage.feeRate(coin)
 
     if storedFeeRate != nil {
@@ -52,27 +52,27 @@ func (kit *FeeRateKit) feeRate(coin string) *FeeRate {
     return defaultFeeRate(coin)
 }
 
-func (kit *FeeRateKit) Bitcoin() *FeeRate {
+func (kit *Kit) Bitcoin() *FeeRate {
     return kit.feeRate(bitcoin)
 }
 
-func (kit *FeeRateKit) BitcoinCash() *FeeRate {
+func (kit *Kit) BitcoinCash() *FeeRate {
     return kit.feeRate(bitcoinCash)
 }
 
-func (kit *FeeRateKit) Dash() *FeeRate {
+func (kit *Kit) Dash() *FeeRate {
     return kit.feeRate(dash)
 }
 
-func (kit *FeeRateKit) Ethereum() *FeeRate {
+func (kit *Kit) Ethereum() *FeeRate {
     return kit.feeRate(ethereum)
 }
 
-func (kit *FeeRateKit) Refresh() {
+func (kit *Kit) Refresh() {
     kit.syncer.syncRates()
 }
 
-func (kit *FeeRateKit) Subscribe(handler Handler) {
+func (kit *Kit) Subscribe(handler Handler) {
     channel := make(chan interface{}, 1)
 
     kit.refreshChannels = append(kit.refreshChannels, channel)
@@ -86,7 +86,7 @@ func (kit *FeeRateKit) Subscribe(handler Handler) {
     }()
 }
 
-func (kit *FeeRateKit) didSyncRates() {
+func (kit *Kit) didSyncRates() {
     for _, channel := range kit.refreshChannels {
         channel <- true
     }

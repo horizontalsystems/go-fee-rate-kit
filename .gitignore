@@ -2,3 +2,5 @@
 .DS_Store
 *.db
 *.framework
+*.jar
+*.aar

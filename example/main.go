@@ -7,7 +7,10 @@ import (
 )
 
 func main() {
-    feeRateKit, err := feeratekit.NewFeeRateKit(".")
+    infuraProjectId := "2a1306f1d12f4c109a4d4fb9be46b02e"
+    infuraProjectSecret := "fc479a9290b64a84a15fa6544a130218"
+
+    feeRateKit, err := feeratekit.NewFeeRateKit(".", infuraProjectId, infuraProjectSecret)
 
     if err != nil {
         log.Fatalln(err)

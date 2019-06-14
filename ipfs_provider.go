@@ -23,7 +23,7 @@ type ipfsRateResponse struct {
     High   int64 `json:"high_priority"`
 }
 
-func (provider *ipfsProvider) getRates() ([]FeeRate, error) {
+func (provider *ipfsProvider) getRates() ([]*FeeRate, error) {
     ipfsUrl := provider.baseUrl + ipfsPath
 
     log.Printf("Requesting %v", ipfsUrl)
@@ -48,7 +48,7 @@ func (provider *ipfsProvider) getRates() ([]FeeRate, error) {
         return nil, err
     }
 
-    rates := make([]FeeRate, 0)
+    rates := make([]*FeeRate, 0)
 
     for coin, rateResponse := range ipfsResponse.Rates {
         //log.Printf("%v: %+v", coin, ipfsRateResponse)
@@ -58,10 +58,10 @@ func (provider *ipfsProvider) getRates() ([]FeeRate, error) {
             lowPriority:    rateResponse.Low,
             mediumPriority: rateResponse.Medium,
             highPriority:   rateResponse.High,
-            timestamp:      ipfsResponse.Time,
+            timestamp:      ipfsResponse.Time / 1000,
         }
 
-        rates = append(rates, rate)
+        rates = append(rates, &rate)
     }
 
     return rates, nil

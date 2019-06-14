@@ -38,7 +38,7 @@ func (storage *storage) prepare() error {
     return err
 }
 
-func (storage *storage) saveRates(rates []FeeRate) error {
+func (storage *storage) saveRates(rates []*FeeRate) error {
     for _, rate := range rates {
         err := storage.saveRate(rate)
 
@@ -50,7 +50,7 @@ func (storage *storage) saveRates(rates []FeeRate) error {
     return nil
 }
 
-func (storage *storage) saveRate(rate FeeRate) error {
+func (storage *storage) saveRate(rate *FeeRate) error {
     _, err := storage.database.Exec("INSERT INTO fee_rates (coin, low, medium, high, timestamp) VALUES (?, ?, ?, ?, ?)",
         rate.coin, rate.lowPriority, rate.mediumPriority, rate.highPriority, rate.timestamp)
     return err

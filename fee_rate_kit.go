@@ -1,7 +1,6 @@
 package feeratekit
 
 import (
-    "log"
     "time"
 )
 
@@ -15,7 +14,7 @@ type Handler interface {
     OnRefresh()
 }
 
-func NewFeeRateKit(dataDir string) (*FeeRateKit, error) {
+func NewFeeRateKit(dataDir string, infuraProjectId string, infuraProjectSecret string) (*FeeRateKit, error) {
     storage, err := newStorage(dataDir)
 
     if err != nil {
@@ -24,13 +23,15 @@ func NewFeeRateKit(dataDir string) (*FeeRateKit, error) {
 
     kit := FeeRateKit{
         storage:         storage,
-        syncer:          newSyncer(storage),
+        syncer:          newSyncer(storage, infuraProjectId, infuraProjectSecret),
         refreshChannels: make([]chan interface{}, 0),
     }
 
+    kit.syncer.delegate = &kit
+
     kit.Refresh()
 
-    ticker := time.NewTicker(5 * time.Second)
+    ticker := time.NewTicker(30 * time.Second)
 
     go func() {
         for range ticker.C {
@@ -68,20 +69,7 @@ func (kit *FeeRateKit) Ethereum() *FeeRate {
 }
 
 func (kit *FeeRateKit) Refresh() {
-    go func() {
-        err := kit.syncer.syncRates()
-
-        if err != nil {
-            log.Printf("Refresh failed: %v", err)
-            return
-        }
-
-        log.Printf("Refresh success")
-
-        for _, channel := range kit.refreshChannels {
-            channel <- true
-        }
-    }()
+    kit.syncer.syncRates()
 }
 
 func (kit *FeeRateKit) Subscribe(handler Handler) {
@@ -96,4 +84,10 @@ func (kit *FeeRateKit) Subscribe(handler Handler) {
             handler.OnRefresh()
         }
     }()
+}
+
+func (kit *FeeRateKit) didSyncRates() {
+    for _, channel := range kit.refreshChannels {
+        channel <- true
+    }
 }
